@@ -11,8 +11,8 @@ It is a c implementation of forest-fire model. According to the deffinition in W
 4. An empty space fills with a tree with probability p <br />
 
 
-## @: Tree 
-## *: Fire 
+### @: Tree 
+### *: Fire 
 
 # Instructions
 Press enter to print the next state of the forestfire after compiling and executing the code.
