@@ -14,3 +14,5 @@ It is a c implementation of forest-fire model. According to the deffinition in W
 ### @: Tree 
 ### *: Fire 
 
+# Instruction
+compile and run the forestFire.c.
