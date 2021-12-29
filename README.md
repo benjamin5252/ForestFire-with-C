@@ -1,7 +1,6 @@
 # ForestFire-with-C
 
-![forest-fire](https://user-images.githubusercontent.com/31298786/147687953-841090f2-b141-4775-911c-b34b31b798ea.gif)
-
+![forest-fire](https://user-images.githubusercontent.com/31298786/147688275-7974bb0b-c764-45f1-b705-45f2b7fa1418.gif)
 
 # Description
 It is a c implementation of forest-fire model. According to the deffinition in Wiki (https://en.wikipedia.org/wiki/Forest-fire_model). The model is defined as a cellular automaton on a grid with Ld cells. L is the sidelength of the grid and d is its dimension. A cell can be empty, occupied by a tree, or burning. The model of Drossel and Schwabl (1992) is defined by four rules which are executed simultaneously: <br />
