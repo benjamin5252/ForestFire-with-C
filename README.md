@@ -10,9 +10,9 @@ It is a c implementation of forest-fire model. According to the deffinition in W
 3. A tree ignites with probability f even if no neighbor is burning <br />
 4. An empty space fills with a tree with probability p <br />
 
-<br />
-### @: Tree 
-### *: Fire 
+
+## @: Tree 
+## *: Fire 
 
 # Instructions
 Press enter to print the next state of the forestfire after compiling and executing the code.
