@@ -1,15 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <time.h>
 
 #define WIDTH 80
 #define HEIGHT 30
 #define NUMBER_OF_GENERATION 1000
-#define INITIAL_G 250
-#define INITIAL_L 2500
+#define G 250
+#define L 10*G
+#define WAIT_TIME 0.1
 
 typedef enum state {empty, tree, fire} state;
 typedef enum bool {false, true} bool;
+enum color {black=30, red, green, yellow, blue, magenta, cyan, white};
+typedef enum color color;
 
 void test(void);
 void state_equal(state a[HEIGHT][WIDTH], state b[HEIGHT][WIDTH]);
@@ -18,91 +22,76 @@ void set_safeguard(state a[HEIGHT][WIDTH], state b[HEIGHT + 2][WIDTH + 2]);
 void quit_safeguard(state a[HEIGHT + 2][WIDTH + 2], state b[HEIGHT][WIDTH]);
 bool fire_surround(state* a, int width);
 void next_state(state c[HEIGHT][WIDTH], int g, int l);
+void clear_screen(void);
+void ch_color(const color c);
+void busy_wait(const double secs);
 void print_state(state c[HEIGHT][WIDTH]);
 
 
 int main(void)
 {
-    int g = INITIAL_G;
-    int l = INITIAL_L;
-    state x[HEIGHT][WIDTH];
+    state a[HEIGHT][WIDTH];
     int i;
     int j;
-    char next_fram;
-
+    
     test();
 
-    initial_state(x);
-
+    initial_state(a);
+    clear_screen();
     for(i = 0; i < NUMBER_OF_GENERATION; i++){
-        
-
-        for(j = 0; j < 80; j++){
+        for(j = 0; j < WIDTH; j++){
             printf("=");
         }
         printf("\n%d\n", i+1);
-        next_state(x, g, l);
-        print_state(x);
-        printf("\nPress enter to next state\n");
-        next_fram = getchar(); 
+        next_state(a, G, L);
+        print_state(a);
+        busy_wait(WAIT_TIME);
     }
     return 0;
 }
 
 void test(void)
 {   
-    int i;
-    int j;
+    int x;
+    int y;
     state a[HEIGHT][WIDTH];
     state b[HEIGHT][WIDTH];
     state c[HEIGHT][WIDTH];
     state a_safe[HEIGHT + 2][WIDTH + 2];
     state d[6][6] = {{empty,  empty, empty, empty, empty, empty}, 
-                    {empty,  empty, empty,  tree, empty, empty}, 
-                    {empty,  tree , empty,  empty, fire, empty},
-                    {empty,  empty,  fire, empty,  tree, empty},
-                    {empty,  empty,  tree, empty,  tree, empty},
-                    {empty,  empty, empty, empty, empty, empty}};
-    /* test for bool fire_surround(state* a, int width) */
+                     {empty,  empty, empty,  tree, empty, empty}, 
+                     {empty,  tree , empty, empty,  fire, empty}, 
+                     {empty,  empty,  fire, empty,  tree, empty},
+                     {empty,  empty,  tree, empty,  tree, empty},
+                     {empty,  empty, empty, empty, empty, empty}};
+
     assert(fire_surround(&d[1][1], 6) == false);
     assert(fire_surround(&d[2][2], 6) == true );
     assert(fire_surround(&d[3][4], 6) == true );
-    assert(fire_surround(&d[4][4], 6) == false );
+    assert(fire_surround(&d[4][4], 6) == false);
 
-    /* test void initial_state(state c[HEIGHT][WIDTH]) */
     initial_state(a);
     assert(a[0][0] == empty);
     assert(a[0][1] == empty);
     assert(a[4][4] == empty);
 
-    /* make array-a switch between tree and fire 
-    like {{tree, fire, tree, fire, tree......fire},
-          {fire, tree, fire, tree, fire......tree},
-          {tree, fire, tree, fire, tree......fire},
-          {fire, tree, fire, tree, fire......tree},
-          {tree, fire, tree, fire, tree......fire},
-                           .
-                           .
-                           .
-          {fire, tree, fire, tree, fire......tree}}*/
-    for(i = 0; i < HEIGHT; i++){
-        for(j = 0; j < WIDTH; j++){
-            if((i + j)%2 == 0){
-                a[i][j] = tree;
+    /* make a[][] switch between tree and fire */
+    for(y = 0; y < HEIGHT; y++){
+        for(x = 0; x < WIDTH; x++){
+            if((y + x)%2 == 0){
+                a[y][x] = tree;
             }
             else{
-                a[i][j] = fire;
+                a[y][x] = fire;
             }
         }
     }
 
-    /* test void state_equal(state a[HEIGHT][WIDTH], state b[HEIGHT][WIDTH]) */
     state_equal(b, a);
     assert(b[0][0] == tree);
     assert(b[0][1] == fire);
     assert(b[4][4] == tree);
 
-    /* test void set_safeguard(state a[HEIGHT][WIDTH], state a_safe[HEIGHT + 2][WIDTH + 2]) */
     set_safeguard(a, a_safe);
     assert(a_safe[0][0]           == empty);
     assert(a_safe[HEIGHT + 1][20] == empty);
@@ -111,132 +100,125 @@ void test(void)
     assert(a_safe[1][1]           == tree);
     assert(a_safe[1][2]           == fire);
 
-    /* test void quit_safeguard(state a_safe[HEIGHT + 2][WIDTH + 2], state a[HEIGHT][WIDTH]);
-    The array-c here will be the same as array-a */
     quit_safeguard(a_safe, c);
     assert(c[0][0] == tree);
     assert(c[0][1] == fire);
     assert(c[4][4] == tree);
 
-    /* test void next_state(state c[HEIGHT][WIDTH], int g, int l);
-    in this state the array-a should turn into switching between fire and empty */
-    next_state(a, INITIAL_G, INITIAL_L);
+    /* after next_state() the a[][] should turn into switching between fire and empty */
+    next_state(a, G, L);
     assert(a[0][0] == fire);
     assert(a[26][37] == empty);
     assert(a[HEIGHT - 1][WIDTH - 1] == fire);
     assert(a[15][40] == empty);
-
-   
-
 }
 
-/* make generation state-a equal to state-b */
 void state_equal(state a[HEIGHT][WIDTH], state b[HEIGHT][WIDTH])
 {
-    int i;
-    int j;
-    for(i = 0; i < HEIGHT; i++){
-        for(j = 0; j < WIDTH; j++){
-            a[i][j] = b[i][j];
+    int x;
+    int y;
+    for(y = 0; y < HEIGHT; y++){
+        for(x = 0; x < WIDTH; x++){
+            a[y][x] = b[y][x];
         }
     }
 }
 
-/* make the input generation state into all empty */
 void initial_state(state a[HEIGHT][WIDTH])
 {
-    int i;
-    int j;
-     for(i = 0; i < HEIGHT; i++){
-        for(j = 0; j < WIDTH; j++){
-            a[i][j] = empty;
+    int x;
+    int y;
+    for(y = 0; y < HEIGHT; y++){
+        for(x = 0; x < WIDTH; x++){
+            a[y][x] = empty;
         }
     }
 }
 
-/* make a new generation state-a_safe with a ring of empty outside the original state-a to prevent testing ouside the array  */
+/* make a a_safe[][] with a ring of empty outside a[][] 
+to prevent testing ouside the array  */
 void set_safeguard(state a[HEIGHT][WIDTH], state a_safe[HEIGHT + 2][WIDTH + 2])
 {
-    int i;
-    int j;
-    for(i = 0; i < HEIGHT + 2; i++){
-        for(j = 0; j < WIDTH + 2; j++){
-            a_safe[i][j] = empty;
+    int x;
+    int y;
+    for(y = 0; y < HEIGHT + 2; y++){
+        for(x = 0; x < WIDTH + 2; x++){
+            a_safe[y][x] = empty;
         }
     }
 
-    for(i = 1; i < HEIGHT + 1; i++){
-        for(j = 1; j < WIDTH + 1; j++){
-            a_safe[i][j] = a[i-1][j-1];
+    for(y = 1; y < HEIGHT + 1; y++){
+        for(x = 1; x < WIDTH + 1; x++){
+            a_safe[y][x] = a[y-1][x-1];
         }
     }
 }
 
-/* take off the outer empty ring of the state-a_safe into state-a; 
-the width and height of a_safe is bigger than original one by 2 because plus one layer on 4 sides  */
+/* take off the outer empty ring of the a_safe[][] into a[][] */
 void quit_safeguard(state a_safe[HEIGHT + 2][WIDTH + 2], state a[HEIGHT][WIDTH])
 {
-    int i;
-    int j;
-    for(i = 1; i < HEIGHT + 1; i++){
-        for(j = 1; j < WIDTH + 1; j++){
-            a[i-1][j-1] = a_safe[i][j];
+    int x;
+    int y;
+    for(y = 1; y < HEIGHT + 1; y++){
+        for(x = 1; x < WIDTH + 1; x++){
+            a[y-1][x-1] = a_safe[y][x];
         }
     }
 }
 
-/* find out if the input data point is within the 8-neighbourhood of a ‘fire’ or not */
+/* test if the input point is within the 8-neighbourhood of a ‘fire’ */
 bool fire_surround(state* a, int width)
 {
-    if(    *(a - width - 1) == fire 
+    if(     *(a - width - 1) == fire 
         ||  *(a - width    ) == fire 
         ||  *(a - width + 1) == fire 
         ||  *(a         - 1) == fire
         ||  *(a         + 1) == fire
         ||  *(a + width - 1) == fire
         ||  *(a + width    ) == fire
-        ||  *(a + width + 1) == fire
-    )
-    {return true;}
-    else
-    {return false;}
+        ||  *(a + width + 1) == fire){
+            return true;
+    }
+    else{
+        return false;
+    }
 }
 
 /* make the input generation state into the next generation */
 void next_state(state a[HEIGHT][WIDTH], int g, int l)
 {
-    int i;
-    int j;
+    int x;
+    int y;
     state next[HEIGHT][WIDTH];
     state a_safe[HEIGHT + 2][WIDTH + 2];
     state next_safe[HEIGHT + 2][WIDTH + 2];
     set_safeguard(next, next_safe);
     set_safeguard(a, a_safe);
     state_equal(next, a);
-    /* iterate from 1 to (HEIGHT + 1) and from 1 to (HEIGHT + 1) 
-    because it is only focus on updating the state inside the empty ring */
-     for(i = 1; i < HEIGHT + 1; i++){
-        for(j = 1; j < WIDTH + 1; j++){
-            switch(a_safe[i][j]){
+    /* iterate from 1 to (HEIGHT + 1) and from 1 to (WIDTH + 1) 
+    because of only updating the state inside the empty ring */
+    for(y = 1; y < HEIGHT + 1; y++){
+        for(x = 1; x < WIDTH + 1; x++){
+            switch(a_safe[y][x]){
                 case empty:
-                if (rand() % g == 0){
-                    next_safe[i][j] = tree;
-                }else{
-                    next_safe[i][j] = empty;
+                if(rand() % g == 0){
+                    next_safe[y][x] = tree;
+                }
+                else{
+                    next_safe[y][x] = empty;
                 }
                 break;
                 case tree:
-                if (
-                    rand() % l == 0 
-                    || fire_surround(&a_safe[i][j], WIDTH + 2) == true
-                    ){
-                    next_safe[i][j] = fire;
-                }else{
-                    next_safe[i][j] = tree;
+                if(    rand() % l == 0 
+                    || fire_surround(&a_safe[y][x], WIDTH + 2) == true){
+                    next_safe[y][x] = fire;
+                }
+                else{
+                    next_safe[y][x] = tree;
                 }
                 break;
                 case fire:
-                next_safe[i][j] = empty;
+                next_safe[y][x] = empty;
                 break;
             }
         }
@@ -245,22 +227,50 @@ void next_state(state a[HEIGHT][WIDTH], int g, int l)
     state_equal(a, next);
 }
 
+
+
+/* code to clear screen */
+void clear_screen(void)
+{
+   printf("\033[2J");
+}
+
+/* color setting function */
+void ch_color(const color c)
+{
+   printf("\033[%dm", c);
+}
+
+/* function to define the time between frames */
+void busy_wait(const double secs)
+{
+   clock_t t2;
+   const clock_t t1 = clock();
+   do{
+      t2 = clock();
+   }while((t2-t1) < (clock_t)((double)CLOCKS_PER_SEC*secs));
+}
+
 /* print out the input generation state */
 void print_state(state a[HEIGHT][WIDTH])
 {
-    int i;
-    int j;
-     for(i = 0; i < HEIGHT; i++){
-        for(j = 0; j < WIDTH; j++){
-            switch(a[i][j]){
+    int x;
+    int y;
+    for(y = 0; y < HEIGHT; y++){
+        for(x = 0; x < WIDTH; x++){
+            switch(a[y][x]){
                 case empty:
                 printf(" ");
                 break;
                 case tree:
+                ch_color(green);
                 printf("@");
+                ch_color(white);
                 break;
                 case fire:
+                ch_color(red);
                 printf("*");
+                ch_color(white);
                 break;
             }
         }
