@@ -15,4 +15,4 @@ It is a c implementation of forest-fire model. According to the deffinition in W
 ### *: Fire 
 
 # Instruction
-compile and run the forestFire.c.
+compile and run the forestFire.c. with gcc
